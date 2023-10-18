@@ -30,28 +30,21 @@ channel_to_listen = 'https://t.me/FreelancehuntProjects'
 tag = '#парсинг_данных'
 
 
-@client.on(events.NewMessage(chats=channel_to_listen))
+@client.on(events.NewMessage(chats=channel_to_listen, pattern=rf'(.|\n)*{tag}'))
 async def listen_to_new_message(event: NewMessage.Event) -> None:
+    await send_notification(event)
+
+
+async def send_notification(event: NewMessage.Event) -> None:
     message: Message = event.message
-    if is_message_valid(message):
-        send_notification(message)
-
-
-def is_message_valid(message: Message):
-    if tag in message.message:
-        return True
-    else:
-        return False
-
-
-def send_notification(message: Message) -> None:
     button = message.reply_markup.rows[0].buttons[0]
     bot.send_message(chat_id=chat_id,
                      text=message.message,
                      reply_markup=InlineKeyboardMarkup([
                          [InlineKeyboardButton(text=button.text,
                                                url=button.url)]
-                     ]))
+                     ])
+                     )
 
 
 with client:
