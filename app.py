@@ -5,6 +5,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import logging
 from telethon.events.newmessage import NewMessage
 from telethon.tl.patched import Message
+from dataclasses import dataclass
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -28,20 +29,36 @@ channel_to_listen = 'https://t.me/FreelancehuntProjects'
 tag = '#парсинг_данных'
 
 
+@dataclass
+class ParsedMessage:
+    text: str
+    button_text: str
+    button_url: str
+
+
 @client.on(events.NewMessage(chats=channel_to_listen, pattern=rf'(.|\n)*{tag}'))
 async def listen_to_new_message(event: NewMessage.Event) -> None:
-    await send_notification(event)
+    parsed_message = await parse_message(event)
+    await send_notification(parsed_message)
 
 
-async def send_notification(event: NewMessage.Event) -> None:
+async def parse_message(event: NewMessage.Event) -> ParsedMessage:
     message: Message = event.message
     button = message.reply_markup.rows[0].buttons[0]
+    parsed_message = ParsedMessage(
+        text=message.message,
+        button_text=button.text,
+        button_url=button.url
+    )
+    return parsed_message
+
+
+async def send_notification(parsed_message: ParsedMessage) -> None:
     bot.send_message(chat_id=chat_id,
-                     text=message.message,
+                     text=parsed_message.text,
                      reply_markup=InlineKeyboardMarkup([
-                         [InlineKeyboardButton(text=button.text,
-                                               url=button.url)]
-                     ])
+                         [InlineKeyboardButton(text=parsed_message.button_text,
+                                               url=parsed_message.button_url)]])
                      )
 
 
